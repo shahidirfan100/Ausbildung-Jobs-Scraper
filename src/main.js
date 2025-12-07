@@ -201,9 +201,21 @@ async function main() {
                 }
 
 
-                // Also check for pagination info
-                const pagination = pageProps?.pagination || pageProps?.meta?.pagination || {};
-                return { jobs, pagination, hasMore: pagination.hasNext || pagination.hasMore || jobs.length > 0 };
+                // Check for pagination info - look in multiple places
+                const pagination = pageProps?.pagination || pageProps?.meta?.pagination ||
+                    pageProps?.data?.pagination || pageProps?.paging || {};
+
+                // Determine if there are more pages: check explicit flags or if we got a full page of results
+                const hasExplicitMore = pagination.hasNext === true || pagination.hasMore === true ||
+                    pagination.nextPage !== undefined || pagination.next !== undefined;
+                const gotFullPage = jobs.length >= 20; // If we got 20 jobs, there's likely more
+
+                return {
+                    jobs,
+                    pagination,
+                    hasMore: hasExplicitMore || gotFullPage,
+                    totalPages: pagination.totalPages || pagination.total_pages || pagination.lastPage || null
+                };
             } catch (error) {
                 log.debug(`Error parsing Next.js response: ${error.message}`);
                 return { jobs: [], pagination: {}, hasMore: false };
@@ -440,21 +452,35 @@ async function main() {
                 let apiSuccess = false;
                 let currentPage = 1;
 
+                let consecutiveFailures = 0;
+                const MAX_CONSECUTIVE_FAILURES = 2;
+
                 while (saved < RESULTS_WANTED && currentPage <= MAX_PAGES) {
                     const apiData = await fetchFromNextJsApi(buildId, currentPage, keyword, location, beruf);
 
                     if (!apiData) {
-                        log.info(`Next.js API returned no data at page ${currentPage}`);
-                        break;
+                        log.warning(`Next.js API returned no data at page ${currentPage}`);
+                        consecutiveFailures++;
+                        if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
+                            log.info('Too many consecutive API failures, switching to HTML fallback');
+                            break;
+                        }
+                        currentPage++;
+                        continue; // Try next page before giving up
                     }
 
-                    const { jobs, hasMore } = parseNextJsJobs(apiData);
+                    const { jobs, hasMore, totalPages } = parseNextJsJobs(apiData);
 
                     if (jobs.length === 0) {
                         log.info(`No jobs parsed from API response at page ${currentPage}`);
-                        break;
+                        consecutiveFailures++;
+                        if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) break;
+                        currentPage++;
+                        continue;
                     }
 
+                    // Reset failure counter on success
+                    consecutiveFailures = 0;
                     apiSuccess = true;
 
                     for (const job of jobs) {
@@ -468,15 +494,30 @@ async function main() {
                         saved++;
                     }
 
-                    log.info(`API Page ${currentPage}: Saved ${saved}/${RESULTS_WANTED} jobs`);
+                    log.info(`API Page ${currentPage}: Saved ${saved}/${RESULTS_WANTED} jobs` +
+                        (totalPages ? ` (total pages: ${totalPages})` : ''));
+
                     currentPage++;
 
-                    if (!hasMore) break;
+                    // Only break if we explicitly know there's no more OR we didn't get any new jobs
+                    if (!hasMore && jobs.length < 20) {
+                        log.info('Reached last page of API results');
+                        break;
+                    }
+
+                    // Small delay to avoid rate limiting
+                    await new Promise(r => setTimeout(r, 500));
                 }
 
-                if (apiSuccess && saved > 0) {
+                // If API got enough results, we're done
+                if (apiSuccess && saved >= RESULTS_WANTED) {
                     log.info(`=== Next.js API SUCCESS: Saved ${saved} jobs ===`);
                     return;
+                }
+
+                // If API got some results but not enough, continue with HTML to get more
+                if (apiSuccess && saved > 0 && saved < RESULTS_WANTED) {
+                    log.info(`API got ${saved} jobs, switching to HTML to get remaining ${RESULTS_WANTED - saved}...`);
                 }
             }
 
