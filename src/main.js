@@ -404,18 +404,32 @@ async function main() {
         }
 
         // ============================================================
-        // PAGINATION - Using user-specified selectors
+        // PAGINATION - Generate page URLs directly with page=N parameter
         // ============================================================
-        function findNextPage($, baseUrl) {
-            // Primary: a[rel='next']
+        function generateNextPageUrl(currentUrl, nextPageNum) {
+            try {
+                const urlObj = new URL(currentUrl);
+                urlObj.searchParams.set('page', nextPageNum.toString());
+                return urlObj.href;
+            } catch {
+                return null;
+            }
+        }
+
+        function findNextPage($, baseUrl, currentPageNo) {
+            // First try: Generate next page URL directly (most reliable for this site)
+            const nextPageUrl = generateNextPageUrl(baseUrl, currentPageNo + 1);
+            if (nextPageUrl) return nextPageUrl;
+
+            // Fallback 1: a[rel='next']
             let next = $('a[rel="next"]').attr('href');
             if (next) return toAbs(next, baseUrl);
 
-            // Secondary: .c-pagination__next
+            // Fallback 2: .c-pagination__next
             next = $('.c-pagination__next').attr('href');
             if (next) return toAbs(next, baseUrl);
 
-            // Fallback: look for next/weiter links
+            // Fallback 3: look for next/weiter links
             const nextLink = $('a').filter((_, el) => {
                 const text = $(el).text().trim().toLowerCase();
                 return /(weiter|next|›|»|>)/i.test(text) && !/(zurück|prev|back)/i.test(text);
@@ -566,15 +580,27 @@ async function main() {
                         }
                     }
 
-                    // Handle pagination
+                    // Handle pagination - use direct URL generation with page=N
                     if (saved < RESULTS_WANTED && pageNo < MAX_PAGES) {
-                        const nextPage = findNextPage($, request.url);
+                        const nextPage = findNextPage($, request.url, pageNo);
                         if (nextPage && !seenUrls.has(nextPage)) {
                             seenUrls.add(nextPage);
+                            crawlerLog.info(`Enqueueing next page: ${nextPage}`);
                             await enqueueLinks({
                                 urls: [nextPage],
                                 userData: { label: 'LIST', pageNo: pageNo + 1 }
                             });
+                        } else if (jobs.length > 0) {
+                            // If we found jobs but no next link, try generating next URL directly
+                            const directNextUrl = generateNextPageUrl(request.url, pageNo + 1);
+                            if (directNextUrl && !seenUrls.has(directNextUrl)) {
+                                seenUrls.add(directNextUrl);
+                                crawlerLog.info(`Generating direct next page URL: ${directNextUrl}`);
+                                await enqueueLinks({
+                                    urls: [directNextUrl],
+                                    userData: { label: 'LIST', pageNo: pageNo + 1 }
+                                });
+                            }
                         }
                     }
                     return;
