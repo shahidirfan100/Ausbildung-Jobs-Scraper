@@ -1,0 +1,69 @@
+{
+  "title": "Ausbildung.de Jobs Scraper",
+  "description": "Extract apprenticeship and training positions from Ausbildung.de. Supports JSON API and HTML parsing with comprehensive filtering options.",
+  "type": "object",
+  "schemaVersion": 1,
+  "properties": {
+    "startUrl": {
+      "title": "Start URL",
+      "type": "string",
+      "description": "Start scraping from a specific Ausbildung.de search URL. If provided, this overrides keyword/location/beruf filters.",
+      "editor": "textfield"
+    },
+    "keyword": {
+      "title": "Search Keyword",
+      "type": "string",
+      "description": "Job title or keyword to search for, e.g., 'Fachinformatiker', 'Kaufmann', 'Mechatroniker'.",
+      "editor": "textfield",
+      "prefill": "Fachinformatiker"
+    },
+    "location": {
+      "title": "Location (Wo)",
+      "type": "string",
+      "description": "City or location to search in, e.g., 'Berlin', 'München', 'Hamburg'.",
+      "editor": "textfield",
+      "prefill": "Berlin"
+    },
+    "beruf": {
+      "title": "Profession/Job Type",
+      "type": "string",
+      "description": "Specific profession or job type to filter by (optional).",
+      "editor": "textfield"
+    },
+    "collectDetails": {
+      "title": "Collect Full Job Details",
+      "type": "boolean",
+      "description": "Visit each job detail page to extract complete descriptions and additional information.",
+      "editor": "checkbox",
+      "default": true
+    },
+    "results_wanted": {
+      "title": "Maximum Results",
+      "type": "integer",
+      "description": "Maximum number of job listings to collect. Set to a lower number for testing.",
+      "minimum": 1,
+      "default": 100,
+      "editor": "number"
+    },
+    "max_pages": {
+      "title": "Maximum Pages",
+      "type": "integer",
+      "description": "Safety limit on the number of search result pages to process.",
+      "minimum": 1,
+      "editor": "number",
+      "default": 50
+    },
+    "proxyConfiguration": {
+      "title": "Proxy Configuration",
+      "type": "object",
+      "description": "Configure proxy settings. Residential proxies recommended for best results with Ausbildung.de.",
+      "editor": "proxy",
+      "default": {
+        "useApifyProxy": true,
+        "apifyProxyGroups": ["RESIDENTIAL"]
+      }
+    }
+  },
+  "required": [],
+  "additionalProperties": false
+}

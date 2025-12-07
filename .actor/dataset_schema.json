@@ -1,0 +1,63 @@
+{
+  "actorSpecification": 1,
+  "fields": {},
+  "views": {
+    "overview": {
+      "title": "Overview",
+      "transformation": {
+        "fields": [
+          "title",
+          "company",
+          "location",
+          "bundesland",
+          "beruf",
+          "ausbildungsart",
+          "start_date",
+          "date_posted",
+          "url"
+        ]
+      },
+      "display": {
+        "component": "table",
+        "properties": {
+          "title": {
+            "label": "Position Title",
+            "format": "text"
+          },
+          "company": {
+            "label": "Company",
+            "format": "text"
+          },
+          "location": {
+            "label": "Location",
+            "format": "text"
+          },
+          "bundesland": {
+            "label": "Federal State",
+            "format": "text"
+          },
+          "beruf": {
+            "label": "Profession",
+            "format": "text"
+          },
+          "ausbildungsart": {
+            "label": "Training Type",
+            "format": "text"
+          },
+          "start_date": {
+            "label": "Start Date",
+            "format": "text"
+          },
+          "date_posted": {
+            "label": "Posted Date",
+            "format": "text"
+          },
+          "url": {
+            "label": "Job URL",
+            "format": "link"
+          }
+        }
+      }
+    }
+  }
+}
