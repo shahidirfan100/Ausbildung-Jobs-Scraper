@@ -146,29 +146,51 @@ async function main() {
                     pageProps?.data?.results,
                     pageProps?.positions,
                     pageProps?.listings,
+                    pageProps?.data?.listings,
+                    pageProps?.initialData?.jobs,
+                    pageProps?.jobListings,
                 ];
 
                 for (const items of possiblePaths) {
                     if (Array.isArray(items) && items.length > 0) {
                         for (const item of items) {
+                            // Extract bundesland with multiple fallbacks
+                            const bundesland = item.bundesland || item.state || item.region ||
+                                item.federalState || item.address?.region ||
+                                item.location?.bundesland || item.location?.state ||
+                                item.jobLocation?.address?.addressRegion || null;
+
+                            // Extract beruf (profession) with multiple fallbacks
+                            const beruf = item.beruf || item.profession || item.category ||
+                                item.berufsfeld || item.jobCategory || item.occupationalCategory ||
+                                item.branche || item.field || item.fachrichtung || null;
+
+                            // Extract ausbildungsart (training type) with multiple fallbacks
+                            const ausbildungsart = item.ausbildungsart || item.trainingType ||
+                                item.stellenart || item.positionType || item.type ||
+                                item.employmentType || item.contractType ||
+                                (item.isDualStudium ? 'Duales Studium' : null) ||
+                                (item.isAusbildung ? 'Ausbildung' : null) || null;
+
                             jobs.push({
                                 title: item.title || item.name || item.jobTitle || null,
                                 company: item.company || item.employer || item.companyName ||
-                                    item.hiringOrganization?.name || null,
-                                location: item.location || item.city || item.address?.city ||
-                                    item.jobLocation?.address?.addressLocality || null,
-                                bundesland: item.bundesland || item.state || item.region || null,
-                                beruf: item.beruf || item.profession || item.category || null,
-                                ausbildungsart: item.ausbildungsart || item.trainingType ||
-                                    item.employmentType || null,
+                                    item.hiringOrganization?.name || item.firma || null,
+                                location: item.location?.city || item.location?.name ||
+                                    item.location || item.city || item.address?.city ||
+                                    item.jobLocation?.address?.addressLocality || item.ort || null,
+                                bundesland: bundesland,
+                                beruf: beruf,
+                                ausbildungsart: ausbildungsart,
                                 date_posted: item.datePosted || item.publishedAt ||
                                     item.createdAt || item.date || null,
                                 start_date: item.startDate || item.ausbildungsbeginn ||
-                                    item.beginnDate || null,
+                                    item.beginnDate || item.start || null,
                                 description_html: item.description || item.descriptionHtml || null,
                                 description_text: item.descriptionText ||
                                     (item.description ? cleanText(item.description) : null),
-                                salary: item.salary || item.gehalt || item.baseSalary?.value || null,
+                                salary: item.salary || item.gehalt || item.baseSalary?.value ||
+                                    item.verguetung || null,
                                 job_type: item.jobType || item.employmentType || null,
                                 url: item.url || item.href || item.link ||
                                     (item.slug ? `https://www.ausbildung.de/stellen/${item.slug}/` : null),
@@ -177,6 +199,7 @@ async function main() {
                         break;
                     }
                 }
+
 
                 // Also check for pagination info
                 const pagination = pageProps?.pagination || pageProps?.meta?.pagination || {};
@@ -269,16 +292,99 @@ async function main() {
                 $('[class*="job-description"], [class*="beschreibung"], .description').first().html();
 
             const sidebarInfo = $('.c-jobDetail__sidebar, .c-jobDetail__facts').text().trim();
+            const fullText = $('body').text();
+
+            // ---- Helper function to find labeled values ----
+            const findLabeledValue = (labelPattern) => {
+                // Try structured elements first (dt/dd, label/value pairs)
+                let value = null;
+
+                // Try dl/dt/dd pairs
+                $('dt, .label, strong').each((_, el) => {
+                    const label = $(el).text().trim().toLowerCase();
+                    if (labelPattern.test(label)) {
+                        const dd = $(el).next('dd, .value, span').text().trim();
+                        if (dd) value = dd;
+                    }
+                });
+                if (value) return value;
+
+                // Try info items with headers
+                $('[class*="info"], [class*="fact"], [class*="detail"]').each((_, el) => {
+                    const text = $(el).text();
+                    const match = text.match(new RegExp(labelPattern.source + '[:\\s]+([^\\n]+)', 'i'));
+                    if (match && match[1]) value = match[1].trim();
+                });
+                if (value) return value;
+
+                return null;
+            };
+
+            // ---- Extract Bundesland (Federal State) ----
+            let bundesland = $('[class*="bundesland"], [class*="state"], [class*="region"]').first().text().trim() || null;
+            if (!bundesland) {
+                // Try breadcrumbs
+                const breadcrumbs = $('.breadcrumb, [class*="breadcrumb"], nav').text();
+                const statesPattern = /(Baden-Württemberg|Bayern|Berlin|Brandenburg|Bremen|Hamburg|Hessen|Mecklenburg-Vorpommern|Niedersachsen|Nordrhein-Westfalen|Rheinland-Pfalz|Saarland|Sachsen|Sachsen-Anhalt|Schleswig-Holstein|Thüringen)/i;
+                const stateMatch = breadcrumbs.match(statesPattern) || fullText.match(statesPattern);
+                if (stateMatch) bundesland = stateMatch[1];
+            }
+            if (!bundesland) bundesland = findLabeledValue(/bundesland|federal\s*state|region/i);
+
+            // ---- Extract Beruf (Profession) ----
+            let beruf = $('[class*="beruf"], [class*="profession"], [class*="category"], [class*="berufsfeld"]').first().text().trim() || null;
+            if (!beruf) {
+                // Try to extract from breadcrumbs or categories
+                beruf = findLabeledValue(/beruf|profession|kategorie|berufsfeld|fachrichtung/i);
+            }
+            if (!beruf) {
+                // Try meta tags
+                const metaKeywords = $('meta[name="keywords"]').attr('content');
+                if (metaKeywords && metaKeywords.includes('Ausbildung')) {
+                    const parts = metaKeywords.split(',').map(s => s.trim());
+                    const profession = parts.find(p => !p.includes('Ausbildung.de') && p.length > 5 && p.length < 50);
+                    if (profession) beruf = profession;
+                }
+            }
+
+            // ---- Extract Ausbildungsart (Training Type) ----
+            let ausbildungsart = $('[class*="ausbildungsart"], [class*="training-type"], [class*="stellenart"]').first().text().trim() || null;
+            if (!ausbildungsart) {
+                ausbildungsart = findLabeledValue(/ausbildungsart|art\s*der\s*ausbildung|stellenart|training|typ/i);
+            }
+            if (!ausbildungsart) {
+                // Try to infer from page content
+                const trainingTypes = ['Duale Ausbildung', 'Schulische Ausbildung', 'Duales Studium', 'Praktikum', 'Trainee'];
+                for (const type of trainingTypes) {
+                    if (fullText.includes(type)) {
+                        ausbildungsart = type;
+                        break;
+                    }
+                }
+            }
+            if (!ausbildungsart) {
+                // Check title for common patterns
+                const title = $('h1').first().text().trim();
+                if (title.toLowerCase().includes('duales studium')) ausbildungsart = 'Duales Studium';
+                else if (title.toLowerCase().includes('ausbildung')) ausbildungsart = 'Ausbildung';
+            }
+
+            // ---- Extract other fields ----
+            const title = $('h1').first().text().trim() ||
+                $('[class*="job-title"]').first().text().trim();
+            const company = $('[class*="company"], [class*="employer"], [class*="firma"]').first().text().trim();
+            const location = $('[class*="location"], [class*="ort"], [class*="standort"]').first().text().trim();
+            const start_date = $('[class*="beginn"], [class*="start"]').first().text().trim() ||
+                findLabeledValue(/beginn|start|ab wann|ausbildungsbeginn/i);
 
             return {
-                title: $('h1').first().text().trim() ||
-                    $('[class*="job-title"]').first().text().trim(),
-                company: $('[class*="company"], [class*="employer"], [class*="firma"]').first().text().trim(),
-                location: $('[class*="location"], [class*="ort"], [class*="standort"]').first().text().trim(),
-                bundesland: $('[class*="bundesland"], [class*="state"]').first().text().trim() || null,
-                beruf: $('[class*="beruf"], [class*="profession"]').first().text().trim() || null,
-                ausbildungsart: $('[class*="ausbildungsart"], [class*="training-type"]').first().text().trim() || null,
-                start_date: $('[class*="beginn"], [class*="start"]').first().text().trim() || null,
+                title: title || null,
+                company: company || null,
+                location: location || null,
+                bundesland: bundesland || null,
+                beruf: beruf || null,
+                ausbildungsart: ausbildungsart || null,
+                start_date: start_date || null,
                 description_html: description_html || null,
                 description_text: description_html ? cleanText(description_html) : null,
                 sidebar_info: sidebarInfo || null,
