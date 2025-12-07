@@ -217,13 +217,13 @@ Each scraped job listing contains the following fields:
 
 ## 💡 How It Works
 
-1. **Input Processing**: The scraper reads your search parameters and constructs appropriate search queries
-2. **JSON API Extraction**: Uses JSON API for maximum speed and reliability
-3. **HTML Fallback**: Automatically switches to HTML parsing if API is unavailable or you provide custom URLs
-4. **Smart Extraction**: Uses JSON-LD structured data when available, falls back to CSS selectors
-5. **Detail Collection**: Optionally visits each job detail page to extract complete information
-6. **Data Validation**: Cleans and validates all extracted data before saving
-7. **Deduplication**: Ensures no duplicate job listings in your final dataset
+1. **BUILD_ID Extraction**: Automatically extracts the Next.js build ID from the initial page load for API access
+2. **Tier 1 - Next.js Data API**: Fetches data via `/_next/data/[BUILD_ID]/suche.json` for maximum speed and reliability
+3. **Tier 2 - JSON-LD Schema**: If API fails, extracts JobPosting structured data from detail pages
+4. **Tier 3 - CSS Selectors**: Falls back to HTML parsing using `.c-jobCard`, `.c-jobCard__company`, `.c-jobCard__location` selectors
+5. **Smart Pagination**: Navigates results using `a[rel='next']` and `.c-pagination__next` selectors
+6. **Detail Collection**: Optionally visits each job detail page to extract complete information
+7. **Data Validation**: Cleans, validates, and deduplicates all extracted data
 
 ## 🔧 Best Practices
 
