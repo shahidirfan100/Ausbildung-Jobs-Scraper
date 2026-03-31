@@ -1,267 +1,259 @@
 # Ausbildung.de Jobs Scraper
 
-Extract comprehensive apprenticeship and training position data from Ausbildung.de, Germany's leading platform for vocational training opportunities. This scraper efficiently collects job listings with detailed information including company details, locations, training types, and complete job descriptions.
+Extract apprenticeship and vocational training listings from Ausbildung.de with rich, structured output for analysis, monitoring, and automation. Collect job titles, companies, locations, application details, timelines, and stable IDs in one dataset. Built for reliable large-scale job data collection with clean, deduplicated records.
 
-## 🚀 Key Features
+---
 
-- **Dual Extraction Method**: Prioritizes fast JSON API calls, automatically falls back to HTML parsing when needed
-- **Smart Pagination**: Intelligently navigates through search results to collect the exact number of listings you need
-- **Rich Data Collection**: Captures complete job information including descriptions, locations, federal states, and training types
-- **Flexible Search Options**: Filter by keyword, location, and profession
-- **Structured Data Support**: Leverages JSON-LD schema for accurate data extraction when available
-- **Built-in Deduplication**: Automatically removes duplicate job listings
-- **Proxy Support**: Includes proxy configuration for reliable, uninterrupted scraping
+## Features
 
-## 📋 Use Cases
+- **Rich Job Records** — Collect listing information, company metadata, training type, and timeline details.
+- **Duplicate-Safe Output** — Automatically keeps unique job entries using stable identifiers.
+- **Clean Dataset Quality** — Excludes empty values from output so records are easier to use downstream.
+- **Flexible Search Inputs** — Run by keyword, location, profession, or full search URL.
+- **Scalable Collection** — Control volume with result and page limits to fit quick tests or larger runs.
+- **Proxy Ready** — Works with proxy configuration for stable, repeatable data collection.
 
-- **Job Market Analysis**: Gather data for analyzing apprenticeship trends across different regions and industries
-- **Career Guidance**: Aggregate training opportunities for students and career counselors
-- **Recruitment Intelligence**: Monitor competitor hiring patterns and training programs
-- **Research & Analytics**: Build datasets for labor market research and vocational education studies
-- **Automated Job Boards**: Feed fresh apprenticeship listings into your own platforms or applications
+---
 
-## 🎯 Input Configuration
+## Use Cases
 
-Configure the scraper with these parameters to match your specific needs:
+### Job Market Intelligence
+Track apprenticeship and dual-study opportunities across companies and locations. Build recurring snapshots to monitor hiring trends over time.
 
-### Search Parameters
+### Career Platform Aggregation
+Feed clean Ausbildung.de listings into internal job portals, newsletter workflows, or recommendation engines.
 
-<table>
-<thead>
-<tr>
-<th>Parameter</th>
-<th>Type</th>
-<th>Description</th>
-<th>Default</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>keyword</code></td>
-<td>String</td>
-<td>Job title or search keyword (e.g., "Fachinformatiker", "Kaufmann")</td>
-<td>-</td>
-</tr>
-<tr>
-<td><code>location</code></td>
-<td>String</td>
-<td>City or location (e.g., "Berlin", "München")</td>
-<td>-</td>
-</tr>
-<tr>
-<td><code>beruf</code></td>
-<td>String</td>
-<td>Specific profession or job category</td>
-<td>-</td>
-</tr>
-<tr>
-<td><code>startUrl</code></td>
-<td>String</td>
-<td>Custom Ausbildung.de search URL (overrides other search parameters)</td>
-<td>-</td>
-</tr>
-</tbody>
-</table>
+### Education and Training Research
+Analyze training types, expected graduation requirements, and start timelines to understand evolving vocational pathways.
 
-### Scraping Options
+### Recruitment Benchmarking
+Compare company-level hiring activity with identifiers and vacancy volume indicators to benchmark talent demand.
 
-<table>
-<thead>
-<tr>
-<th>Parameter</th>
-<th>Type</th>
-<th>Description</th>
-<th>Default</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>results_wanted</code></td>
-<td>Integer</td>
-<td>Maximum number of job listings to collect</td>
-<td>100</td>
-</tr>
-<tr>
-<td><code>max_pages</code></td>
-<td>Integer</td>
-<td>Maximum number of pages to process (safety limit)</td>
-<td>50</td>
-</tr>
-<tr>
-<td><code>collectDetails</code></td>
-<td>Boolean</td>
-<td>Visit detail pages to extract full job descriptions</td>
-<td>true</td>
-</tr>
-<tr>
-<td><code>proxyConfiguration</code></td>
-<td>Object</td>
-<td>Proxy settings for reliable scraping</td>
-<td>Residential proxies</td>
-</tr>
-</tbody>
-</table>
+### Data Pipelines and BI
+Export structured records into analytics systems for dashboards, alerts, and automated reporting.
 
-### Example Input
+---
+
+## Input Parameters
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `startUrl` | String | No | — | Start from a specific Ausbildung.de search URL. If provided, this overrides keyword/location/beruf construction. |
+| `keyword` | String | No | — | Search keyword, for example `Fachinformatiker`. |
+| `location` | String | No | — | Target city or location, for example `Berlin`. |
+| `beruf` | String | No | — | Profession/job-type filter value. |
+| `collectDetails` | Boolean | No | `true` | Compatibility input kept for existing workflows. |
+| `results_wanted` | Integer | No | `100` | Maximum number of unique listings to save. |
+| `max_pages` | Integer | No | `50` | Maximum number of result pages to process. |
+| `proxyConfiguration` | Object | No | `{ "useApifyProxy": true }` | Proxy setup for improved reliability. |
+
+---
+
+## Output Data
+
+Each dataset item contains core job fields and extended listing metadata.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `title` | String | Listing title. |
+| `company` | String | Company or subsidiary name. |
+| `location` | String | City/location shown in listing. |
+| `beruf` | String | Profession title/category. |
+| `ausbildungsart` | String | Apprenticeship or training type. |
+| `start_date` | String | Earliest known start date. |
+| `description_html` | String | HTML job description extracted from JobPosting schema on the detail page. |
+| `description_text` | String | Plain-text description derived from `description_html`. |
+| `url` | String | Canonical listing URL. |
+| `vacancy_public_id` | String | Stable listing identifier. |
+| `vacancy_slug` | String | Listing slug. |
+| `vacancy_count` | Number | Vacancy count marker from source record. |
+| `related_branches_count` | Number | Related branch count indicator. |
+| `corporation_name` | String | Corporation name from listing metadata. |
+| `corporation_public_id` | String | Stable corporation identifier. |
+| `corporation_logo` | String | Corporation logo URL. |
+| `corporation_starving_state` | Number | Corporation state flag. |
+| `corporation_display_vacancy_counts` | Boolean | Whether vacancy counts are displayed. |
+| `subsidiary_name` | String | Subsidiary name. |
+| `subsidiary_public_id` | String | Stable subsidiary identifier. |
+| `subsidiary_logo` | String | Subsidiary logo URL. |
+| `direct_application_on` | Boolean | Indicates direct application availability. |
+| `application_options` | String | Application option mode. |
+| `apprenticeship_type` | String | Detailed apprenticeship type code. |
+| `profession_title` | String | Detailed profession label. |
+| `salesforce_category` | String | Category label attached to listing. |
+| `expected_graduation` | String | Expected graduation requirement. |
+| `duration` | String | Program duration text. |
+| `valid_until` | String | Valid-until date if available. |
+| `in_spotlight` | Boolean | Spotlight/promoted indicator. |
+| `non_eu_flow` | Number | Non-EU flow marker. |
+| `ba_booking` | String | Booking state marker. |
+| `cluster_id` | Number | Cluster identifier. |
+| `cluster_subsidiary_id` | Number | Cluster subsidiary ID. |
+| `cluster_profession_id` | Number | Cluster profession ID. |
+| `cluster_created_at` | String | Cluster creation timestamp. |
+| `cluster_updated_at` | String | Cluster update timestamp. |
+| `meta_results_count` | Number | Total results indicator from current response metadata. |
+| `meta_vacancies_count` | Number | Total vacancies indicator from current response metadata. |
+| `meta_city_name` | String | Metadata city value when present. |
+| `meta_session_location` | Boolean | Session location flag. |
+| `meta_country_entry_point` | String | Country entry point value. |
+| `meta_country_entry_code` | String | Country entry code. |
+
+---
+
+## Usage Examples
+
+### Basic Keyword Search
 
 ```json
 {
   "keyword": "Fachinformatiker",
   "location": "Berlin",
-  "results_wanted": 50,
-  "max_pages": 10,
-  "collectDetails": true
+  "results_wanted": 20
 }
 ```
 
-## 📤 Output Format
-
-Each scraped job listing contains the following fields:
-
-<table>
-<thead>
-<tr>
-<th>Field</th>
-<th>Type</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>title</code></td>
-<td>String</td>
-<td>Job position title</td>
-</tr>
-<tr>
-<td><code>company</code></td>
-<td>String</td>
-<td>Company or employer name</td>
-</tr>
-<tr>
-<td><code>location</code></td>
-<td>String</td>
-<td>Job location (city)</td>
-</tr>
-<tr>
-<td><code>bundesland</code></td>
-<td>String</td>
-<td>German federal state</td>
-</tr>
-<tr>
-<td><code>beruf</code></td>
-<td>String</td>
-<td>Profession or job category</td>
-</tr>
-<tr>
-<td><code>ausbildungsart</code></td>
-<td>String</td>
-<td>Type of training/apprenticeship</td>
-</tr>
-<tr>
-<td><code>start_date</code></td>
-<td>String</td>
-<td>Training start date</td>
-</tr>
-<tr>
-<td><code>date_posted</code></td>
-<td>String</td>
-<td>Date the job was posted</td>
-</tr>
-<tr>
-<td><code>description_html</code></td>
-<td>String</td>
-<td>Full job description (HTML format)</td>
-</tr>
-<tr>
-<td><code>description_text</code></td>
-<td>String</td>
-<td>Plain text version of job description</td>
-</tr>
-<tr>
-<td><code>salary</code></td>
-<td>String</td>
-<td>Salary information (if available)</td>
-</tr>
-<tr>
-<td><code>job_type</code></td>
-<td>String</td>
-<td>Employment type</td>
-</tr>
-<tr>
-<td><code>url</code></td>
-<td>String</td>
-<td>Direct link to job posting</td>
-</tr>
-</tbody>
-</table>
-
-### Example Output
+### Profession-Focused Collection
 
 ```json
 {
-  "title": "Ausbildung zum Fachinformatiker für Anwendungsentwicklung (m/w/d)",
-  "company": "TechCorp GmbH",
-  "location": "Berlin",
-  "bundesland": "Berlin",
-  "beruf": "Fachinformatiker/in - Anwendungsentwicklung",
-  "ausbildungsart": "Duale Ausbildung",
-  "start_date": "01.08.2025",
-  "date_posted": "2024-12-01",
-  "description_html": "<p>Wir suchen motivierte Auszubildende...</p>",
-  "description_text": "Wir suchen motivierte Auszubildende...",
-  "salary": "1000-1200 EUR",
-  "job_type": "Ausbildung",
-  "url": "https://www.ausbildung.de/stellen/..."
+  "keyword": "Ausbildung",
+  "location": "Hamburg",
+  "beruf": "informatik",
+  "results_wanted": 100,
+  "max_pages": 10
 }
 ```
 
-## 💡 How It Works
+### Start From Custom Search URL
 
-1. **BUILD_ID Extraction**: Automatically extracts the Next.js build ID from the initial page load for API access
-2. **Tier 1 - Next.js Data API**: Fetches data via `/_next/data/[BUILD_ID]/suche.json` for maximum speed and reliability
-3. **Tier 2 - JSON-LD Schema**: If API fails, extracts JobPosting structured data from detail pages
-4. **Tier 3 - CSS Selectors**: Falls back to HTML parsing using `.c-jobCard`, `.c-jobCard__company`, `.c-jobCard__location` selectors
-5. **Smart Pagination**: Navigates results using `a[rel='next']` and `.c-pagination__next` selectors
-6. **Detail Collection**: Optionally visits each job detail page to extract complete information
-7. **Data Validation**: Cleans, validates, and deduplicates all extracted data
-
-## 🔧 Best Practices
-
-- **Start Small**: Test with `results_wanted: 10` before running large-scale extractions
-- **Use Proxies**: Enable proxy configuration for reliable, uninterrupted scraping
-- **Specific Searches**: More specific keywords yield better, more relevant results
-- **Monitor Limits**: Set appropriate `max_pages` to control runtime and costs
-- **Detail Mode**: Disable `collectDetails` if you only need basic listing information
-
-## ⚙️ Technical Details
-
-- Built with Crawlee for robust crawling and data extraction
-- Uses JSON API for efficient data extraction with HTML fallback capability
-- Implements intelligent retry logic and error handling
-- Uses residential proxies for optimal reliability
-- Processes data asynchronously for maximum performance
-
-## 📊 Performance
-
-- **Speed**: Processes 20-50 jobs per minute with API mode
-- **Accuracy**: 95%+ data completeness with detail collection enabled
-- **Reliability**: Built-in retry mechanisms handle temporary failures
-- **Scalability**: Efficiently handles from 10 to 10,000+ job listings
-
-## 🆘 Troubleshooting
-
-**No results returned**: Verify your search parameters are correct and the website has matching listings
-
-**Incomplete data**: Enable `collectDetails` to extract full job information from detail pages
-
-**Rate limiting**: Enable proxy configuration and reduce `results_wanted` or add delays
-
-**Outdated selectors**: The scraper automatically updates to handle website changes, but contact support if issues persist
-
-## 📞 Support & Feedback
-
-Found an issue or have a suggestion? We'd love to hear from you! Your feedback helps us improve this scraper for everyone.
+```json
+{
+  "startUrl": "https://www.ausbildung.de/suche/?was=fachinformatiker&wo=berlin",
+  "results_wanted": 50,
+  "max_pages": 8,
+  "proxyConfiguration": {
+    "useApifyProxy": true,
+    "apifyProxyGroups": ["RESIDENTIAL"]
+  }
+}
+```
 
 ---
 
-Start extracting valuable apprenticeship data from Ausbildung.de today! Configure your parameters and run the scraper to build comprehensive datasets for your analysis, research, or application needs.
+## Sample Output
+
+```json
+{
+  "title": "Duales Studium BWL Sales Management | Peak One GmbH",
+  "company": "iba Internationale Berufsakademie",
+  "location": "Hamburg",
+  "beruf": "Duales Studium BWL",
+  "ausbildungsart": "duales-studium",
+  "start_date": "2026-04-01",
+  "url": "https://www.ausbildung.de/stellen/duales-studium-bwl-sales-management-peak-one-gmbh-bei-iba-internationale-berufsakademie-in-hamburg-5a6f712e-b21b-4236-8e59-4a02ae086b44/",
+  "vacancy_public_id": "5a6f712e-b21b-4236-8e59-4a02ae086b44",
+  "vacancy_slug": "duales-studium-bwl-sales-management-peak-one-gmbh-bei-iba-internationale-berufsakademie-in-hamburg-5a6f712e-b21b-4236-8e59-4a02ae086b44",
+  "vacancy_count": 856,
+  "related_branches_count": 311,
+  "corporation_name": "iba Internationale Berufsakademie",
+  "corporation_public_id": "7a077aae-996c-43de-b923-29bc8a4a79d5",
+  "corporation_logo": "https://www.ausbildung.de/uploads/image/17/17fa40f4-8cb8-4f23-a492-59ae7706b77d/iba_Logo_auf_wei%C3%9F_RGB.png",
+  "subsidiary_name": "iba Internationale Berufsakademie",
+  "subsidiary_public_id": "51ba5881-21bc-4d96-8c0a-8f3c3c3ab214",
+  "direct_application_on": false,
+  "application_options": "online",
+  "apprenticeship_type": "duales-studium",
+  "profession_title": "Duales Studium BWL",
+  "salesforce_category": "A+",
+  "expected_graduation": "fachabitur",
+  "duration": "3 Jahre",
+  "in_spotlight": false,
+  "non_eu_flow": 1,
+  "ba_booking": "FALSE",
+  "cluster_id": 2464,
+  "cluster_subsidiary_id": 9030,
+  "cluster_profession_id": 668,
+  "cluster_created_at": "2020-08-31T18:03:11.999Z",
+  "cluster_updated_at": "2020-08-31T18:03:11.999Z",
+  "meta_results_count": 10000,
+  "meta_vacancies_count": 113270,
+  "meta_session_location": false,
+  "meta_country_entry_point": "Pakistan",
+  "meta_country_entry_code": "PK"
+}
+```
+
+---
+
+## Tips For Best Results
+
+### Start Small, Then Scale
+- Use `results_wanted: 20` for quick validation runs.
+- Increase volume only after validating output quality.
+
+### Use Targeted Queries
+- Combine `keyword` and `location` for tighter result relevance.
+- Add `beruf` when you need profession-specific datasets.
+
+### Control Runtime
+- Use `max_pages` to keep run duration predictable.
+- Prefer multiple focused runs over one oversized broad run.
+
+### Improve Stability
+- Enable proxies for large collections and repeated schedules.
+- If results repeat heavily, lower `max_pages` and run more targeted filters.
+
+---
+
+## Integrations
+
+- **Google Sheets** — Build shareable reporting sheets quickly.
+- **Airtable** — Maintain searchable apprenticeship databases.
+- **Make** — Automate enrichment and routing workflows.
+- **Zapier** — Trigger actions in CRM, messaging, and analytics tools.
+- **Webhooks** — Push fresh dataset items into your own systems.
+
+### Export Formats
+
+- **JSON** — Best for APIs and backend pipelines.
+- **CSV** — Ideal for spreadsheets and BI tools.
+- **Excel** — Useful for business handoff and reporting.
+- **XML** — Helpful for system-to-system data exchange.
+
+---
+
+## Frequently Asked Questions
+
+### How many listings can I collect?
+You can collect as many as available within your `results_wanted` and `max_pages` limits.
+
+### Are duplicates automatically removed?
+Yes. The actor keeps unique records using stable listing identifiers.
+
+### Why are some fields missing in an item?
+Some listings simply do not provide every optional attribute. Empty values are omitted from the output.
+
+### Can I run from a pre-filtered URL?
+Yes. Provide `startUrl` to start from a specific Ausbildung.de search page.
+
+### Can I schedule regular monitoring runs?
+Yes. Use Apify schedules and export targets to track changes over time.
+
+---
+
+## Support
+
+For issues or feature requests, use the Apify Console issue and support channels.
+
+### Resources
+
+- [Apify Documentation](https://docs.apify.com/)
+- [Apify API Reference](https://docs.apify.com/api/v2)
+- [Apify Scheduling](https://docs.apify.com/platform/schedules)
+
+---
+
+## Legal Notice
+
+This actor is intended for legitimate data collection workflows. You are responsible for complying with applicable laws, platform terms, and internal data governance policies.

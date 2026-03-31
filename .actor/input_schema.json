@@ -42,7 +42,7 @@
       "type": "integer",
       "description": "Maximum number of job listings to collect. Set to a lower number for testing.",
       "minimum": 1,
-      "default": 100,
+      "default": 20,
       "editor": "number"
     },
     "max_pages": {
@@ -59,8 +59,7 @@
       "description": "Configure proxy settings. Residential proxies recommended for best results with Ausbildung.de.",
       "editor": "proxy",
       "default": {
-        "useApifyProxy": true,
-        "apifyProxyGroups": ["RESIDENTIAL"]
+        "useApifyProxy": false
       }
     }
   },

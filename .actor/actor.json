@@ -1,10 +1,10 @@
 {
   "actorSpecification": 1,
-  "name": "ausbildung-jobs-scraper",
+  "name": "Ausbildung-Jobs-Scraper",
   "title": "Ausbildung.de Jobs Scraper",
-  "version": "1.0.0",
+  "version": "1.1",
   "buildTag": "latest",
-  "dockerfile": "./Dockerfile",
+  "dockerfile": "../Dockerfile",
   "readme": "../README.md",
   "input": "./input_schema.json",
   "output": "./output_schema.json",
